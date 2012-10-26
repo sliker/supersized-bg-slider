@@ -46,7 +46,7 @@ if (!is_admin()) {
 	 * 
      * Enqueue plugin style-file
      */
-    add_action( 'wp_head', 'supersized_add_stylesheet' );
+    add_action( 'wp_enqueue_scripts', 'supersized_add_stylesheet' );
     function supersized_add_stylesheet() {
         wp_register_style( 'supersized', plugins_url('/css/supersized.css', __FILE__) );
         wp_enqueue_style( 'supersized' );
