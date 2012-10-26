@@ -28,7 +28,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 // If Admin Area, add administration options page
 if ( is_admin() ) require_once( dirname( __FILE__ ) . '/admin.php' );
 
-// Load javascripts and css files
+// Load javascripts, html and css
 if (!is_admin()) {
 	
 	/**
@@ -43,11 +43,10 @@ if (!is_admin()) {
 	
 	/**
      * CSS files
-     */
-    add_action( 'wp_enqueue_scripts', 'supersized_add_stylesheet' );
-    /**
+	 * 
      * Enqueue plugin style-file
      */
+    add_action( 'wp_head', 'supersized_add_stylesheet' );
     function supersized_add_stylesheet() {
         wp_register_style( 'supersized', plugins_url('/css/supersized.css', __FILE__) );
         wp_enqueue_style( 'supersized' );
@@ -57,47 +56,58 @@ if (!is_admin()) {
 	 * Supersized js init code
 	 * 
 	 */
-	//add_action('wp_footer', 'supersized_footer_code');
 	add_action('wp_footer', 'supersized_footer_code');
 	function supersized_footer_code() {
+		global $post;
+		/* options */
 		$autoplay = ( get_option('supersized_autoplay') == 1 ) ? 'true' : 'false';
-		$js = "
-			<script type='text/javascript'>
-			jQuery(document).ready(function($){
-				$('#nextslide').click(function(){
-					api.nextSlide();
-				});
-				$('#prevslide').click(function(){
-					api.prevSlide();
-				});
+		
+		/*****************/
+		//query to get images
+		$qry = new WP_Query('post_type=supersized&showposts=-1');
+		if ($qry->have_posts()):
+			$i = 0;
+			$images = '';
+			while ($qry->have_posts()) : $qry->the_post();
+				$thumbnail_id = get_post_thumbnail_id($post->ID);
+				if ($thumbnail_id) {
+					$images .= '{image: \'' . wp_get_attachment_url($thumbnail_id, 'Supersized') . '\'},';
+				}
+				$i++;
+			endwhile;
+			//echo $images;
+			$js = "
+				<script type='text/javascript'>
+				jQuery(document).ready(function($){
+					$('#nextslide').click(function(){
+						api.nextSlide();
+					});
+					$('#prevslide').click(function(){
+						api.prevSlide();
+					});
+					
+					$.supersized({
 				
-				$.supersized({
-			
-				// Functionality
-				autoplay				: 	$autoplay,
-				slide_interval          :   3000,		// Length between transitions
-				transition              :   1, 			// 0-None, 1-Fade, 2-Slide Top, 3-Slide Right, 4-Slide Bottom, 5-Slide Left, 6-Carousel Right, 7-Carousel Left
-				transition_speed		:	700,		// Speed of transition
-													   
-				// Components							
-				slide_links				:	'false',	// Individual links for each slide (Options: false, 'num', 'name', 'blank')
-				slides 					:  	[			// Slideshow Images
-											{image : 'http://buildinternet.s3.amazonaws.com/projects/supersized/3.2/slides/kazvan-1.jpg', title : 'Image Credit: Maria Kazvan', thumb : 'http://buildinternet.s3.amazonaws.com/projects/supersized/3.2/thumbs/kazvan-1.jpg', url : 'http://www.nonsensesociety.com/2011/04/maria-kazvan/'},
-											{image : 'http://buildinternet.s3.amazonaws.com/projects/supersized/3.2/slides/kazvan-2.jpg', title : 'Image Credit: Maria Kazvan', thumb : 'http://buildinternet.s3.amazonaws.com/projects/supersized/3.2/thumbs/kazvan-2.jpg', url : 'http://www.nonsensesociety.com/2011/04/maria-kazvan/'},  
-											{image : 'http://buildinternet.s3.amazonaws.com/projects/supersized/3.2/slides/kazvan-3.jpg', title : 'Image Credit: Maria Kazvan', thumb : 'http://buildinternet.s3.amazonaws.com/projects/supersized/3.2/thumbs/kazvan-3.jpg', url : 'http://www.nonsensesociety.com/2011/04/maria-kazvan/'},
-											{image : 'http://buildinternet.s3.amazonaws.com/projects/supersized/3.2/slides/wojno-1.jpg', title : 'Image Credit: Colin Wojno', thumb : 'http://buildinternet.s3.amazonaws.com/projects/supersized/3.2/thumbs/wojno-1.jpg', url : 'http://www.nonsensesociety.com/2011/03/colin/'},
-											{image : 'http://buildinternet.s3.amazonaws.com/projects/supersized/3.2/slides/wojno-2.jpg', title : 'Image Credit: Colin Wojno', thumb : 'http://buildinternet.s3.amazonaws.com/projects/supersized/3.2/thumbs/wojno-2.jpg', url : 'http://www.nonsensesociety.com/2011/03/colin/'},
-											{image : 'http://buildinternet.s3.amazonaws.com/projects/supersized/3.2/slides/wojno-3.jpg', title : 'Image Credit: Colin Wojno', thumb : 'http://buildinternet.s3.amazonaws.com/projects/supersized/3.2/thumbs/wojno-3.jpg', url : 'http://www.nonsensesociety.com/2011/03/colin/'},
-											{image : 'http://buildinternet.s3.amazonaws.com/projects/supersized/3.2/slides/shaden-1.jpg', title : 'Image Credit: Brooke Shaden', thumb : 'http://buildinternet.s3.amazonaws.com/projects/supersized/3.2/thumbs/shaden-1.jpg', url : 'http://www.nonsensesociety.com/2011/06/brooke-shaden/'},
-											{image : 'http://buildinternet.s3.amazonaws.com/projects/supersized/3.2/slides/shaden-2.jpg', title : 'Image Credit: Brooke Shaden', thumb : 'http://buildinternet.s3.amazonaws.com/projects/supersized/3.2/thumbs/shaden-2.jpg', url : 'http://www.nonsensesociety.com/2011/06/brooke-shaden/'},
-											{image : 'http://buildinternet.s3.amazonaws.com/projects/supersized/3.2/slides/shaden-3.jpg', title : 'Image Credit: Brooke Shaden', thumb : 'http://buildinternet.s3.amazonaws.com/projects/supersized/3.2/thumbs/shaden-3.jpg', url : 'http://www.nonsensesociety.com/2011/06/brooke-shaden/'}
-										]
-			
+					// Functionality
+					autoplay				: 	$autoplay,
+					slide_interval          :   3000,		// Length between transitions
+					transition              :   1, 			// 0-None, 1-Fade, 2-Slide Top, 3-Slide Right, 4-Slide Bottom, 5-Slide Left, 6-Carousel Right, 7-Carousel Left
+					transition_speed		:	700,		// Speed of transition
+														   
+					// Components							
+					slide_links				:	'false',	// Individual links for each slide (Options: false, 'num', 'name', 'blank')
+					slides 					:  	[			// Slideshow Images
+												$images
+												]
+				
+					});
 				});
-			});
-			</script>
-		";
-		echo $js;
+				</script>
+			";
+			echo $js;
+			
+		endif;
+		wp_reset_postdata();
 	}
 	
 	/**
@@ -106,12 +116,14 @@ if (!is_admin()) {
 	 */
 	add_action('wp_footer', 'navigation');
 	function navigation() {
-		$html = "
-			<!--Arrow Navigation-->
-			<a id=\"prevslide\" class=\"load-item\"></a>
-			<a id=\"nextslide\" class=\"load-item\"></a>
-		";
-		echo $html;
+		if (get_option('supersized_navigation')){
+			$html = "
+				<!--Arrow Navigation-->
+				<a id=\"prevslide\" class=\"load-item\"></a>
+				<a id=\"nextslide\" class=\"load-item\"></a>
+			";
+			echo $html;
+		}
 	} 
 
 }
